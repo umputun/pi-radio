@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Radio-Pi</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="http://code.jquery.com/mobile/1.2.0/jquery.mobile-1.2.0.min.css"/>
+    <script src="http://code.jquery.com/jquery-1.8.2.min.js"></script>
+    <script src="http://code.jquery.com/mobile/1.2.0/jquery.mobile-1.2.0.min.js"></script>
+</head>
+<body>
+<div data-role="page" data-title="Radio RPi">
+ 
+    <div data-role="header" data-theme="c" data-position="fixed">
+        <a href="#" data-icon="delete" class="ui-btn-left" data-theme="" id="stop">Stop</a>
+        <h1 id="status"></h1>
+        <a href="#" data-icon="check" class="ui-btn-right" data-theme="" id="play">Play</a>
+    </div>
+    <!-- /header -->
+ 
+    <div data-role="content">
+        <ul data-role="listview" data-filter="true" data-theme="c" data-inset="true" id="stations">
+        </ul>
+    </div>
+    <!-- /content -->
+ 
+    <div data-role="footer" class="ui-bar" data-position="fixed" data-theme="c">
+        <form>
+            <input type="range" name="slider-fill" id="volume" value="5" min="0" max="10" data-highlight="true"/>
+        </form>
+    </div>
+    <!-- /footer -->
+ 
+</div>
+<!-- /page -->
+</body>
+<script>
+    ;
+    (function () {
+ 
+        $(document).bind('mobileinit', function () {
+            $.mobile.loader.prototype.options.text = "loading";
+            $.mobile.loader.prototype.options.textVisible = true;
+            $.mobile.loader.prototype.options.theme = "c";
+            $.mobile.loader.prototype.options.html = "";
+        });
+ 
+        $(function () {
+ 
+            String.prototype.format = function () {
+                var args = arguments;
+                return this.replace(/{(\d+)}/g, function (match, number) {
+                    return typeof args[number] != 'undefined'
+                            ? args[number]
+                            : match
+                            ;
+                });
+            };
+ 
+            $.ajaxSetup({ cache: false });
+ 
+            var App = {
+ 
+                listURL: 'http://piradio.umputun.com/list',
+                playURL: 'http://piradio.umputun.com/play/',
+                stopURL: 'http://piradio.umputun.com/stop',
+                statusURL: 'http://piradio.umputun.com/status',
+                volumeURL: 'http://piradio.umputun.com/volume/',
+ 
+                prevStation: null,
+ 
+                init: function () {
+                    $.mobile.loading('show');
+ 
+                    // Get list stations
+                    $.ajax({
+                        url: App.listURL,
+                        success: function (data) {
+                            App.renderList(data.response.list);
+ 
+                            // Get status
+                            App.getStatus();
+                        }
+                    });
+ 
+                    $('#stop').tap(App.stop);
+                    $('#play').tap(function () {
+                        if (App.prevStation){
+                            App.play(App.prevStation);
+                        } else {
+                            App.play($('#stations li a').eq(0).text());
+                        }
+                    });
+ 
+                    $('#stations').on('tap', 'li a', function () {
+                        App.play($(this).text());
+                    });
+ 
+                    $('#volume').on('slidestop', function (event) {
+                        App.setVolume($('#volume').val());
+                    });
+ 
+                    $.mobile.loading('hide');
+                },
+ 
+                setVolume: function (i) {
+                    $.post(App.volumeURL + i  + '?' + new Date().getTime())
+                },
+ 
+                stop: function () {
+                    $.post(App.stopURL  + '?' + new Date().getTime(), function (data) {
+                        App.getStatus();
+                    });
+                },
+ 
+                play: function (station) {
+                    $.post(App.playURL + station  + '?' + new Date().getTime(), function (data) {
+                        App.getStatus();
+                    });
+                },
+ 
+                getStatus: function () {
+                    $.ajax({
+                        url: App.statusURL,
+                        success: function (data) {
+                            App.renderStatus(data.response.status, data.response.station, data.response.volume);
+                        }
+                    });
+                },
+ 
+                renderList: function (stations) {
+                    var _list = "",
+                            _tempalte = '<li><a data-url="{0}" id="{1}">{1}</a></li>';
+ 
+                    for (var key in stations) {
+                        _list = _list + _tempalte.format(stations[key], key);
+                    }
+ 
+                    $('#stations').html(_list).listview("refresh");
+                },
+ 
+                renderStatus: function (status, station, volume) {
+                    var $status = $('#status');
+ 
+                    $('#volume').val(volume).slider('refresh');
+ 
+                    $('#stations').find('a').parent().parent().removeClass('ui-btn-active');
+ 
+                    if (status == 'stop') {
+                        $status.text('OFF AIR');
+                    } else {
+                        $status.text('ON AIR - ' + station);
+                        $('#' + station).parent().parent().addClass('ui-btn-active');
+                        App.prevStation = station;
+                    }
+                }
+ 
+            };
+ 
+            App.init();
+ 
+        });
+    }());
+</script>
+</html>

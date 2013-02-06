@@ -1,0 +1,12 @@
+#!/bin/bash
+
+ROOTDIR=`dirname $0`
+cd $ROOTDIR
+mkdir logs >/dev/null
+pid=${ROOTDIR}/pi-radio-mpd.pid
+
+kill `cat $pid` 1>/dev/null 2>/dev/null
+kill -9 `cat $pid` 1>/dev/null 2>/dev/null
+
+$ROOTDIR/pi-radio-mpd.py 1>logs/pi-radio.out 2>logs/pi-radio.err &
+echo $! > $pid
