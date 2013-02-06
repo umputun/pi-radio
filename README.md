@@ -1,1 +1,1 @@
- simple wrapper for mpd to serve rest/json kind of api. working just fine on my RPi.
+ Simple wrapper for mpd to serve rest/json kind of api with mininalistic web ui. Working just fine on my RPi.
