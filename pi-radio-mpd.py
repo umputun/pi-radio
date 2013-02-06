@@ -4,18 +4,10 @@
 import web, subprocess, json, signal, time, mpd, collections
 
 STATIONS =  {
-#    "FoxNews" : "mmsh://a138.l1387324137.c13873.g.lm.akamaistream.net/D/138/13873/v0001/reflector:24137?MSWMExt=.asf",
     "FoxNews" : "http://fnradio-shoutcast-64.ng.akacast.akamaistream.net/7/115/13873/v1/auth.akacast.akamaistream.net/fnradio-shoutcast-64",
     "Classic" : "http://radio02-cn03.akadostream.ru:8100/classic128.mp3",
     u"Высоцкий" : "http://music.myradio.ua:8000/pesni-vysockogo128.mp3",
     u"Наше–Радио": "http://mp3.nashe.ru/nashe-128.mp3",
-    u"Романтика": "http://radio02-cn03.akadostream.ru:8113/radioromantika128.mp3",
-    u"Ретро-Радио" : "http://webcast1.emg.fm:55655/retro128.mp3",
-    u"ЕвропаПлюс" : "http://webcast.emg.fm:55655/europaplus128.mp3",
-    u"М-Волна" :"http://radio02-cn03.akadostream.ru:8114/radiomv192.mp3",
-    u"РусскийРок": "http://relay.myradio.ua:8000/RusRock128.mp3",
-    "Jazz": "http://streaming208.radionomy.com:80/A-JAZZ-FM-WEB",
-    "RelaxFM" : "http://217.29.51.162:8000/relaxfm-128k.mp3",
 }
 
 
