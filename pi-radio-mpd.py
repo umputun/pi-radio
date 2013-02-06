@@ -1,6 +1,25 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+
+ # Copyright 2013 Umputun
+
+ # This file is part of Pi-Radio.
+
+ # Pi-Radio is free software: you can redistribute it and/or modify
+ # it under the terms of the GNU General Public License as published by
+ # the Free Software Foundation, either version 3 of the License, or
+ # (at your option) any later version.
+
+ # Pi-Radio is distributed in the hope that it will be useful,
+ # but WITHOUT ANY WARRANTY; without even the implied warranty of
+ # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ # GNU General Public License for more details.
+
+ # You should have received a copy of the GNU General Public License
+ # along with Pi-Radio.  If not, see http://www.gnu.org/licenses/.
+
+
 import web, subprocess, json, signal, time, mpd, collections
 
 STATIONS =  {
@@ -43,9 +62,9 @@ class list:
 class volume:
 
     def GET(self, volume_level): #level between 0 and 10
-	
+
 	mpc = mc.get_client()
-	
+
 	level = int(mc.get_client().status()['volume'])
 	if volume_level:
 	    if int(volume_level) == 0: level = 0
@@ -93,8 +112,8 @@ class status:
 	mpd_status = mc.get_client().status()
 	print "status = " + str(mpd_status)
 	mc.release_client()
-#	volume = (int(mpd_status['volume']) - 80) / 2 
-	volume = int(mpd_status['volume']) / 10 
+#	volume = (int(mpd_status['volume']) - 80) / 2
+	volume = int(mpd_status['volume']) / 10
 	web.header('Content-Type', 'application/json')
 	if mpd_status['state'] == 'play':
 	    station_name = mc.ids[mpd_status['songid']]
@@ -123,7 +142,7 @@ class mpd_controller:
 	except mpd.ConnectionError:
 	    print "already connected"
 	return self.client
-	
+
     def release_client(self):
 	try:
     	    self.client.disconnect()

@@ -1,4 +1,5 @@
 #!/bin/bash
+#startup script, no params needed
 
 ROOTDIR=`dirname $0`
 cd $ROOTDIR
