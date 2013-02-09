@@ -14,6 +14,12 @@
         <a href="#" data-icon="delete" class="ui-btn-left" data-theme="" id="stop">Stop</a>
         <h1 id="status"></h1>
         <a href="#" data-icon="check" class="ui-btn-right" data-theme="" id="play">Play</a>
+        <div data-role="navbar" class="ui-navbar ui-mini" role="banner">
+            <h1 class="ui-title" id="current_song" data-role="song-name"></h1>
+        </div>
+        <div data-role="popup" id="popupBasic">
+            <p data-role="song-name"><p>
+        </div>
     </div>
     <!-- /header -->
  
@@ -59,6 +65,8 @@
             $.ajaxSetup({ cache: false });
  
             var App = {
+
+                checkStatusInterval: 15, // sec
  
                 listURL: '/list',
                 playURL: '/play/',
@@ -70,6 +78,14 @@
  
                 init: function () {
                     $.mobile.loading('show');
+
+                    // Show Popup with full #current_song
+
+                    $('#current_song').click(function(){
+                        $('#popupBasic').popup("open", {
+                            positionTo: '#current_song'
+                        });
+                    });
  
                     // Get list stations
                     $.ajax({
@@ -122,7 +138,10 @@
                     $.ajax({
                         url: App.statusURL,
                         success: function (data) {
-                            App.renderStatus(data.response.status, data.response.station, data.response.volume);
+                            App.renderStatus(data.response.status, data.response.station, data.response.volume, data.response.currentsong);
+                        },
+                        complete: function(){
+                            setTimeout(App.getStatus, App.checkStatusInterval * 1000)
                         }
                     });
                 },
@@ -138,8 +157,9 @@
                     $('#stations').html(_list).listview("refresh");
                 },
  
-                renderStatus: function (status, station, volume) {
-                    var $status = $('#status');
+                renderStatus: function (status, station, volume, currentsong) {
+                    var $status = $('#status'),
+                        $song_name = $('[data-role=song-name]');
  
                     $('#volume').val(volume).slider('refresh');
  
@@ -147,8 +167,10 @@
  
                     if (status == 'stop') {
                         $status.text('OFF AIR');
+                        $song_name.text('');
                     } else {
                         $status.text('ON AIR - ' + station);
+                        $song_name.text(currentsong);
                         $('#' + station).parent().parent().addClass('ui-btn-active');
                         App.prevStation = station;
                     }
