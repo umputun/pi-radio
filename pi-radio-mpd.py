@@ -22,7 +22,8 @@
 
 import web, subprocess, json, signal, time, mpd, collections
 
-STATIONS =  {
+
+DEFAULT_STATIONS =  { #internal list of stations. used if no stattions.list file found
     "FoxNews" : "http://fnradio-shoutcast-64.ng.akacast.akamaistream.net/7/115/13873/v1/auth.akacast.akamaistream.net/fnradio-shoutcast-64",
     "Classic" : "http://radio02-cn03.akadostream.ru:8100/classic128.mp3",
     u"Высоцкий" : "http://music.myradio.ua:8000/pesni-vysockogo128.mp3",
@@ -55,9 +56,9 @@ class icon:
 
 class list:
     def GET(self):
-        print STATIONS
+        print mc.get_stations()
         web.header('Content-Type', 'application/json')
-        return (json.dumps({'response' : {'list': collections.OrderedDict(sorted(STATIONS.items()))} }, separators=(',',':') ))
+        return (json.dumps({'response' : {'list': collections.OrderedDict(sorted(mc.get_stations().items()))} }, separators=(',',':') ))
 
 class volume:
 
@@ -68,10 +69,10 @@ class volume:
         level = int(mc.get_client().status()['volume'])
         if volume_level:
             if int(volume_level) == 0: level = 0
-            else: level = int(volume_level)*10 # 80 + int(volume_level) * 2
+            else: level = int(volume_level)*10
             mpc.setvol(level)
         else:
-            volume_level = level/10 # (level - 80) / 2
+            volume_level = level/10
         print "volume level=%d, %s" % (level, volume_level)
 
         mc.release_client()
@@ -92,7 +93,7 @@ class play:
         mc.release_client()
         web.header('Content-Type', 'application/json')
         web.ctx.status = '201 Created'
-        return (json.dumps({'response' :  {'station': STATIONS[station]} }, separators=(',',':') ))
+        return (json.dumps({'response' :  {'station':  mc.get_stations()[station]} }, separators=(',',':') ))
 
     def POST(self, volume_level): return self.GET(volume_level)
 
@@ -112,18 +113,25 @@ class status:
         mpd_status = mc.get_client().status()
         print "status = " + str(mpd_status)
         mc.release_client()
-        #	volume = (int(mpd_status['volume']) - 80) / 2
         volume = int(mpd_status['volume']) / 10
         web.header('Content-Type', 'application/json')
         if mpd_status['state'] == 'play':
             station_name = mc.ids[mpd_status['songid']]
-            return (json.dumps({'response' :  {'status' : 'play', 'station' : station_name, 'volume' : volume} }, separators=(',',':') ))
+            current_song = mc.get_client().currentsong()
+            if 'title' in current_song:
+                current_song_title = current_song['title'].encode('utf-8')
+                print "current song=" + current_song_title
+            else:
+                current_song_title = ''
+            return (json.dumps({'response' :  {'status' : 'play', 'station' : station_name,
+                'volume' : volume, "currentsong" : current_song} }, separators=(',',':') ))
         else:
             return (json.dumps({'response' :  {'status' : 'stop', 'volume' : volume} }, separators=(',',':') ))
 
 class mpd_controller:
     def __init__(self, stations):
         self.client = mpd.MPDClient()
+        self.stations = stations
 
         try:
             self.client.connect("localhost", 6600)
@@ -149,8 +157,20 @@ class mpd_controller:
         except mpd.ConnectionError:
             print "can't disconnect"
 
+    def get_stations(self):
+        return self.stations
 
-mc = mpd_controller(STATIONS)
+def load_stations():
+    try:
+        result = dict( (st_name.strip().decode('utf-8'), st_url.strip())
+            for st_name,st_url in (a.split(',') for a in open("stations.list").read().splitlines() ) )
+        print "total %d stations loaded" % len(result)
+        return result
+    except IOError as e:
+        print "stations.list not found, internal list loaded"
+        return DEFAULT_STATIONS
+
+mc = mpd_controller(load_stations())
 
 if __name__ == "__main__":
     app.run()
