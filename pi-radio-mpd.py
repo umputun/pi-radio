@@ -111,13 +111,13 @@ class stop:
 class status:
     def GET(self):
         mpd_status = mc.get_client().status()
-        print "status = " + str(mpd_status)
-        mc.release_client()
+        #print "status = " + str(mpd_status)
+        #mc.release_client()
         volume = int(mpd_status['volume']) / 10
         web.header('Content-Type', 'application/json')
         if mpd_status['state'] == 'play':
             station_name = mc.ids[mpd_status['songid']]
-            current_song = mc.get_client().currentsong().get('title', '')
+            current_song_title = mc.get_client().currentsong().get('title', '')
             return (json.dumps({'response' :  {'status' : 'play', 'station' : station_name,
                 'volume' : volume, "currentsong" : current_song} }, separators=(',',':') ))
         else:
@@ -141,9 +141,10 @@ class mpd_controller:
 
     def get_client(self):
         try:
-            self.client.connect("localhost", 6600)
+            self.client.status()
         except mpd.ConnectionError:
-            print "already connected"
+            print "reconnect"
+            self.client.connect("localhost", 6600)
         return self.client
 
     def release_client(self):
