@@ -117,7 +117,7 @@ class status:
         web.header('Content-Type', 'application/json')
         if mpd_status['state'] == 'play':
             station_name = mc.ids[mpd_status['songid']]
-            current_song_title = mc.get_client().currentsong().get('title', '')
+            current_song = mc.get_client().currentsong().get('title', '')
             return (json.dumps({'response' :  {'status' : 'play', 'station' : station_name,
                 'volume' : volume, "currentsong" : current_song} }, separators=(',',':') ))
         else:
