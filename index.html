@@ -14,9 +14,6 @@
         <a href="#" data-icon="delete" class="ui-btn-left" data-theme="" id="stop">Stop</a>
         <h1 id="status"></h1>
         <a href="#" data-icon="check" class="ui-btn-right" data-theme="" id="play">Play</a>
-        <div data-role="navbar" class="ui-navbar ui-mini" role="banner">
-            <h1 class="ui-title" id="current_song" data-role="song-name"></h1>
-        </div>
         <div data-role="popup" id="popupBasic">
             <p data-role="song-name"><p>
         </div>
@@ -79,11 +76,11 @@
                 init: function () {
                     $.mobile.loading('show');
 
-                    // Show Popup with full #current_song
+                    // Show Popup with song title
 
-                    $('#current_song').click(function(){
+                    $('#status').click(function(){
                         $('#popupBasic').popup("open", {
-                            positionTo: '#current_song'
+                            positionTo: '#status'
                         });
                     });
  
