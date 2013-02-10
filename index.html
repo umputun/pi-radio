@@ -166,7 +166,7 @@
                         $status.text('OFF AIR');
                         $song_name.text('');
                     } else {
-                        $status.text('ON AIR - ' + station);
+                        $status.text(station);
                         $song_name.text(currentsong);
                         $('#' + station).parent().parent().addClass('ui-btn-active');
                         App.prevStation = station;
