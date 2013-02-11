@@ -20,7 +20,7 @@
 # along with Pi-Radio.  If not, see http://www.gnu.org/licenses/.
 
 
-import web, subprocess, json, signal, time, mpd, collections
+import web, subprocess, json, signal, time, mpd, collections, threading
 
 
 DEFAULT_STATIONS =  { #internal list of stations. used if no stattions.list file found
@@ -43,6 +43,7 @@ urls = (
 )
 
 app = web.application(urls, globals())
+
 index_page = open('index.html', 'r').read()
 
 class index:
@@ -64,69 +65,79 @@ class volume:
 
     def GET(self, volume_level): #level between 0 and 10
 
-        mpc = mc.get_client()
+        try:
+            client = mc.acquire_client()
 
-        level = int(mc.get_client().status()['volume'])
-        if volume_level:
-            if int(volume_level) == 0: level = 0
-            else: level = int(volume_level)*10
-            mpc.setvol(level)
-        else:
-            volume_level = level/10
-        print "volume level=%d, %s" % (level, volume_level)
+            level = int(client.status()['volume'])
+            if volume_level:
+                if int(volume_level) == 0: level = 0
+                else: level = int(volume_level)*10
+                client.setvol(level)
+            else:
+                volume_level = level/10
+            print "volume level=%d, %s" % (level, volume_level)
 
-        mc.release_client()
-
-        web.header('Content-Type', 'application/json')
-        return (json.dumps({'response' :  {'level': volume_level} }, separators=(',',':') ))
+            web.header('Content-Type', 'application/json')
+            return (json.dumps({'response' :  {'level': volume_level} }, separators=(',',':') ))
+        finally:
+            mc.release_client()
 
     def POST(self, volume_level): return self.GET(volume_level)
 
 class play:
     def GET(self, station):
-        print "play station="+ station.encode('utf-8')
-        client = mc.get_client()
-        client.stop()
-        found_id = [sid for sid, st_name in mc.ids.items() if st_name == station][0]
-        print "play id=%s" % found_id
-        client.playid(found_id)
-        mc.release_client()
-        web.header('Content-Type', 'application/json')
-        web.ctx.status = '201 Created'
-        return (json.dumps({'response' :  {'station':  mc.get_stations()[station]} }, separators=(',',':') ))
+        try:
+            print "play station="+ station.encode('utf-8')
+            client = mc.acquire_client()
+            found_id = [sid for sid, st_name in mc.ids.items() if st_name == station][0]
+            print "play id=%s" % found_id
+            client.playid(found_id)
+            web.header('Content-Type', 'application/json')
+            web.ctx.status = '201 Created'
+            return (json.dumps({'response' :  {'station':  mc.get_stations()[station]} }, separators=(',',':') ))
+        finally:
+            mc.release_client()
 
-    def POST(self, volume_level): return self.GET(volume_level)
+    def POST(self, station): return self.GET(station)
 
 class stop:
     def GET(self):
-        print "stop"
-        client = mc.get_client()
-        client.stop()
-        mc.release_client()
-        web.header('Content-Type', 'application/json')
-        return (json.dumps({'response' :  {'result' : 1} }, separators=(',',':') ))
+        try:
+            print "stop"
+            client = mc.acquire_client()
+            client.stop()
+            web.header('Content-Type', 'application/json')
+            return (json.dumps({'response' :  {'result' : 1} }, separators=(',',':') ))
+        finally:
+            mc.release_client()
 
     def POST(self): return self.GET()
 
 class status:
     def GET(self):
-        mpd_status = mc.get_client().status()
-        #print "status = " + str(mpd_status)
-        #mc.release_client()
-        volume = int(mpd_status['volume']) / 10
-        web.header('Content-Type', 'application/json')
-        if mpd_status['state'] == 'play':
-            station_name = mc.ids[mpd_status['songid']]
-            current_song = mc.get_client().currentsong().get('title', '')
-            return (json.dumps({'response' :  {'status' : 'play', 'station' : station_name,
-                'volume' : volume, "currentsong" : current_song} }, separators=(',',':') ))
-        else:
-            return (json.dumps({'response' :  {'status' : 'stop', 'volume' : volume} }, separators=(',',':') ))
+        try:
+            client = mc.acquire_client()
+            mpd_status = client.status()
+            volume = int(mpd_status.get('volume', '5')) / 10
+            web.header('Content-Type', 'application/json')
+            if mpd_status['state'] == 'play':
+                station_name = mc.ids[mpd_status['songid']]
+                current_song = client.currentsong().get('title', '')
+                return (json.dumps({'response' :  {'status' : 'play', 'station' : station_name,
+                    'volume' : volume, "currentsong" : current_song} }, separators=(',',':') ))
+            else:
+                return (json.dumps({'response' :  {'status' : 'stop', 'volume' : volume} },
+                    separators=(',',':') ))
+        finally:
+            print "status unlock"
+            mc.release_client()
+
 
 class mpd_controller:
     def __init__(self, stations):
         self.client = mpd.MPDClient()
         self.stations = stations
+        self.lock = threading.Lock()
 
         try:
             self.client.connect("localhost", 6600)
@@ -139,12 +150,13 @@ class mpd_controller:
             self.ids[self.client.addid(st_url)] = st_name
         self.client.disconnect()
 
-    def get_client(self):
+    def acquire_client(self):
         try:
-            self.client.status()
-        except mpd.ConnectionError:
-            print "reconnect"
+            self.lock.acquire()
             self.client.connect("localhost", 6600)
+        except mpd.ConnectionError:
+            print "already connected"
+
         return self.client
 
     def release_client(self):
@@ -152,6 +164,8 @@ class mpd_controller:
             self.client.disconnect()
         except mpd.ConnectionError:
             print "can't disconnect"
+        finally:
+            self.lock.release()
 
     def get_stations(self):
         return self.stations
@@ -169,5 +183,6 @@ def load_stations():
 mc = mpd_controller(load_stations())
 
 if __name__ == "__main__":
+    web.config.debug = False
     app.run()
 
