@@ -63,8 +63,6 @@
  
             var App = {
 
-                checkStatusInterval: 15, // sec
- 
                 listURL: '/list',
                 playURL: '/play/',
                 stopURL: '/stop',
@@ -79,8 +77,13 @@
                     // Show Popup with song title
 
                     $('#status').click(function(){
-                        $('#popupBasic').popup("open", {
-                            positionTo: '#status'
+                        $.ajax({
+                            url: App.statusURL,
+                            success: function (data) {
+                                $('#popupBasic').popup("open", {
+                                    positionTo: '#status'
+                                });
+                            }
                         });
                     });
  
@@ -136,9 +139,6 @@
                         url: App.statusURL,
                         success: function (data) {
                             App.renderStatus(data.response.status, data.response.station, data.response.volume, data.response.currentsong);
-                        },
-                        complete: function(){
-                            setTimeout(App.getStatus, App.checkStatusInterval * 1000)
                         }
                     });
                 },
