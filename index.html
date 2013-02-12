@@ -80,8 +80,10 @@
                         $.ajax({
                             url: App.statusURL,
                             success: function (data) {
-                                $('#popupBasic').popup("open", {
-                                    positionTo: '#status'
+                                App.renderStatus(data.response.status, data.response.station, data.response.volume, data.response.currentsong, function(){
+                                    $('#popupBasic').popup("open", {
+                                        positionTo: '#status'
+                                    });
                                 });
                             }
                         });
@@ -154,7 +156,7 @@
                     $('#stations').html(_list).listview("refresh");
                 },
  
-                renderStatus: function (status, station, volume, currentsong) {
+                renderStatus: function (status, station, volume, currentsong, callback) {
                     var $status = $('#status'),
                         $song_name = $('[data-role=song-name]');
  
@@ -171,6 +173,12 @@
                         $('#' + station).parent().parent().addClass('ui-btn-active');
                         App.prevStation = station;
                     }
+
+                    if (callback && typeof(callback) === "function") {
+                        console.log('callback', callback);
+                        callback();
+                    }
+
                 }
  
             };
