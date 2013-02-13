@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 
@@ -68,7 +68,7 @@ class volume:
         try:
             client = mc.acquire_client()
 
-            level = int(client.status()['volume'])
+            level = int(client.status().get('volume', '50'))
             if volume_level:
                 if int(volume_level) == 0: level = 0
                 else: level = int(volume_level)*10
@@ -89,6 +89,7 @@ class play:
         try:
             print "play station="+ station.encode('utf-8')
             client = mc.acquire_client()
+            client.stop()
             found_id = [sid for sid, st_name in mc.ids.items() if st_name == station][0]
             print "play id=%s" % found_id
             client.playid(found_id)
@@ -118,7 +119,7 @@ class status:
         try:
             client = mc.acquire_client()
             mpd_status = client.status()
-            volume = int(mpd_status.get('volume', '5')) / 10
+            volume = int(mpd_status.get('volume', '50')) / 10
             web.header('Content-Type', 'application/json')
             if mpd_status['state'] == 'play':
                 station_name = mc.ids[mpd_status['songid']]
@@ -129,7 +130,6 @@ class status:
                 return (json.dumps({'response' :  {'status' : 'stop', 'volume' : volume} },
                     separators=(',',':') ))
         finally:
-            print "status unlock"
             mc.release_client()
 
 
