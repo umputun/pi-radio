@@ -68,14 +68,11 @@ class volume:
         try:
             client = mc.acquire_client()
 
-            level = int(client.status().get('volume', '50'))
             if volume_level:
-                if int(volume_level) == 0: level = 0
-                else: level = int(volume_level)*10
-                client.setvol(level)
+                client.setvol(int(volume_level)*10)
             else:
-                volume_level = level/10
-            print "volume level=%d, %s" % (level, volume_level)
+                volume_level = int(client.status().get('volume', '50'))/10
+            print "volume level=%s" % volume_level
 
             web.header('Content-Type', 'application/json')
             return (json.dumps({'response' :  {'level': volume_level} }, separators=(',',':') ))
