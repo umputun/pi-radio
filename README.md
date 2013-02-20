@@ -13,3 +13,6 @@ Can be extended to support not mpd only but other backends, for example Pianobar
 
 ###Web UI:
 ![](http://bit.ly/Y0a6yi)
+
+###API:
+http://docs.radiorpi.apiary.io
